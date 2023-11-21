@@ -3,8 +3,9 @@ import socket
 import threading
 import json
 import time
-import config
-import counter
+
+import helpers.config as config
+import helpers.counter as counter
 
 # Process CMD Argument
 if len(sys.argv) < 2:
@@ -38,10 +39,24 @@ def listen():
 def process_message(message):  # This is called whenever the server recieves a message
     # Decode message
     processed_message = json.loads(message)
-    print(processed_message)
-    if (processed_message["NodeID"] != Identifier):
+    if (processed_message["DestinationNode"] != Identifier):
         send_message(config.routing[Identifier]
-                     [processed_message["NodeID"]], message)
+                     [processed_message["DestinationNode"]], message)
+    else:
+        if (processed_message["Type"] == "Request"):
+            response = config.functions[Identifier](processed_message)
+            destination = response["SourceNode"]
+            response["SourceNode"] = Identifier
+            response["DestinationNode"] = destination
+            response["Type"] = "Response"
+            send_message(config.routing[Identifier]
+                         [destination], json.dumps(response))
+        elif (processed_message["Type"] == "Response"):
+            print(
+                f"Recieved Response From {processed_message['SourceNode']}\n\tMessageID : {processed_message['MessageID']}\n\tType : {processed_message['Type']}\n\tMessage : {processed_message['Message']}")
+        else:
+            print(
+                f"Unknown Request From {processed_message['SourceNode']}\n\tMessageID : {processed_message['MessageID']}\n\tType : {processed_message['Type']}\n\tMessage : {processed_message['Message']}")
 
 
 def send_message(node_ID, message):
@@ -65,10 +80,19 @@ print(IP_address, " at ", Port, " is Online as ", Identifier)
 time.sleep(0.5)
 try:
     # send some messages
-    destination = "Node4"
+    if (Identifier == "Node1"):
+        destination = "Node4"
+    elif (Identifier == "Node2"):
+        destination = "Node3"
+    elif (Identifier == "Node3"):
+        destination = "Node2"
+    else:
+        destination = "Node1"
+
     send_message(config.routing[Identifier][destination], json.dumps(
         {
-            "NodeID": destination,
+            "SourceNode": Identifier,
+            "DestinationNode": destination,
             "MessageID": MessageID.inc(),
             "Type": "Request",
             "Message": f"Hello from {Identifier}"
