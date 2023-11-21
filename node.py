@@ -3,6 +3,7 @@ import socket
 import threading
 import json
 import time
+import queue
 
 import helpers.config as config
 import helpers.counter as counter
@@ -19,7 +20,7 @@ Identifier = sys.argv[1]
 
 # Message Counter
 MessageID = counter.AtomicCounter()
-
+Responses = queue.PriorityQueue()
 
 def listen():
     server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -31,41 +32,65 @@ def listen():
     while True:
         client_socket, client_address = server_socket.accept()
         data = client_socket.recv(1024)
+        if len(data) == 0:
+            break
         if data:
-            process_message(data.decode())
-            client_socket.close()
+            process_message(data.decode(), client_socket)
+    client_socket.close()
+        
 
 
-def process_message(message):  # This is called whenever the server recieves a message
+def process_message(message, client):  # This is called whenever the server recieves a message
+    global Responses
     # Decode message
     processed_message = json.loads(message)
-    if (processed_message["DestinationNode"] != Identifier):
+    # Handle Client Requests
+    if (processed_message["Type"] == "Client"):
+        destination = config.service_dict[processed_message["Service"]]
+        id = MessageID.inc()
+        Responses.put((id, client))
+        send_message(config.routing[Identifier][destination], json.dumps(
+            {
+                "SourceNode": Identifier,
+                "DestinationNode": destination,
+                "MessageID": id,
+                "Type": "Request",
+                "Message": processed_message["Message"]
+            }
+        ))
+    elif (processed_message["DestinationNode"] != Identifier):
         send_message(config.routing[Identifier]
                      [processed_message["DestinationNode"]], message)
     else:
+        # Handle All other requests
         if (processed_message["Type"] == "Request"):
             response = config.functions[Identifier](processed_message)
             destination = response["SourceNode"]
             response["SourceNode"] = Identifier
             response["DestinationNode"] = destination
             response["Type"] = "Response"
-            send_message(config.routing[Identifier]
-                         [destination], json.dumps(response))
+            send_message(config.routing[Identifier][destination], json.dumps(response))
+        
         elif (processed_message["Type"] == "Response"):
-            print(
-                f"Recieved Response From {processed_message['SourceNode']}\n\tMessageID : {processed_message['MessageID']}\n\tType : {processed_message['Type']}\n\tMessage : {processed_message['Message']}")
+            if Responses.qsize() != 0 and processed_message["MessageID"] == Responses.queue[0][0]:
+                send_message("NaN", processed_message["Message"], Responses.get()[1])
+            print(f"Recieved Response From {processed_message['SourceNode']}\n\tMessageID : {processed_message['MessageID']}\n\tType : {processed_message['Type']}\n\tMessage : {processed_message['Message']}")
+        
         else:
             print(
                 f"Unknown Request From {processed_message['SourceNode']}\n\tMessageID : {processed_message['MessageID']}\n\tType : {processed_message['Type']}\n\tMessage : {processed_message['Message']}")
 
 
-def send_message(node_ID, message):
+def send_message(node_ID, message, client = None):
     if (node_ID == Identifier):
-        process_message(message)
+        process_message(message, client)
     else:
         # Don't forget to encode the message as a JSON object!
         client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        client_socket.connect(config.Nodes[node_ID])
+        if client != None:
+            client_socket = client
+        else:
+            client_socket.connect(config.Nodes[node_ID])
         client_socket.sendall(message.encode())
 
 
