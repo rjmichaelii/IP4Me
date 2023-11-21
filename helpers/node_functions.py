@@ -4,7 +4,7 @@ import string
 def Node1(input: dict)->dict:
     rand_num = random.randint(0,1000)
     print(f"Recieved Request from {input['SourceNode']} - Generated Random Number")
-    input["Message"] = rand_num
+    input["Message"] = str(rand_num)
     return input
 
 def Node2(input: dict)->dict:

@@ -32,6 +32,15 @@ functions = {
     "Node4": node_functions.Node4
 }
 
+services = ["RandNum", "Lowercase", "Uppercase", "RandString"]
+
+service_dict = {
+    "RandNum": "Node1",
+    "Lowercase" : "Node2",
+    "Uppercase" : "Node3",
+    "RandString" : "Node4"
+}
+
 routing = {
     "Node1": {
         "Node1": "Node1",
