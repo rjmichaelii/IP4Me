@@ -101,31 +101,6 @@ server_thread.start()
 # Announce that server is started
 print(IP_address, " at ", Port, " is Online as ", Identifier)
 
-# Wait for other Nodes to start
-time.sleep(0.5)
-try:
-    # send some messages
-    if (Identifier == "Node1"):
-        destination = "Node4"
-    elif (Identifier == "Node2"):
-        destination = "Node3"
-    elif (Identifier == "Node3"):
-        destination = "Node2"
-    else:
-        destination = "Node1"
-
-    send_message(config.routing[Identifier][destination], json.dumps(
-        {
-            "SourceNode": Identifier,
-            "DestinationNode": destination,
-            "MessageID": MessageID.inc(),
-            "Type": "Request",
-            "Message": f"Hello from {Identifier}"
-        }
-    ))
-except Exception as e:
-    print("ERROR", e)
-
 # Keep window alive
 while (True):
     try:
