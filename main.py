@@ -1,5 +1,5 @@
 import subprocess
-import config
+import helpers.config as config
 
 
 if __name__ == "__main__":
@@ -7,5 +7,3 @@ if __name__ == "__main__":
         args = 'start python node.py ' + node
         print(args)
         subprocess.run(args, shell=True)
-        
-
