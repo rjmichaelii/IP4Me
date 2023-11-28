@@ -7,3 +7,5 @@ if __name__ == "__main__":
         args = 'start python node.py ' + node
         print(args)
         subprocess.run(args, shell=True)
+
+    subprocess.run('start python client.py', shell=True)

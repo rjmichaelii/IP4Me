@@ -7,7 +7,7 @@ from helpers.config import Nodes, services, service_dict
 def getResponse(service, message):
     client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
-    client_socket.connect(Nodes[service_dict[service]])
+    client_socket.connect(Nodes["Node1"])#service_dict[service]
 
     client_socket.send(json.dumps(
         {

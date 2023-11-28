@@ -49,6 +49,7 @@ def process_message(message, client):  # This is called whenever the server reci
         destination = config.service_dict[processed_message["Service"]]
         id = MessageID.inc()
         Responses.put((id, client))
+        print(f"Recieved message from client for {destination}. Forwarding to {config.routing[Identifier][destination]}")
         send_message(config.routing[Identifier][destination], json.dumps(
             {
                 "SourceNode": Identifier,
@@ -59,6 +60,7 @@ def process_message(message, client):  # This is called whenever the server reci
             }
         ))
     elif (processed_message["DestinationNode"] != Identifier):
+        print(f"Recieved Message for {processed_message['DestinationNode']}. Forwarding to {config.routing[Identifier][processed_message['DestinationNode']]}")
         send_message(config.routing[Identifier]
                      [processed_message["DestinationNode"]], message)
     else:
@@ -69,6 +71,7 @@ def process_message(message, client):  # This is called whenever the server reci
             response["SourceNode"] = Identifier
             response["DestinationNode"] = destination
             response["Type"] = "Response"
+            print(f"Sending Response for {destination} to {config.routing[Identifier][destination]}")
             send_message(config.routing[Identifier][destination], json.dumps(response))
         
         elif (processed_message["Type"] == "Response"):
